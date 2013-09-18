@@ -97,7 +97,8 @@ def login():
     print '开始进行签到...'
     print '查找所有贴吧...'
     '''improtant!!!'''
-    'http://tieba.baidu.com/f/like/mylike?v=1379413391641'
+    'http://tieba.baidu.com/f/like/mylike?v=1379413391641'  #v这货跟的多半是时间
+	'tieba.baidu.com/home/forum?un=ansshiwei&fr=home'  #我关注的i贴吧
     ''''''
 #     BAIDU_TIEBA_URL = 'http://tieba.baidu.com/'
 #     BAIDU_ITIEBA_URL = 'http://tieba.baidu.com/i/%s?fr=index'
