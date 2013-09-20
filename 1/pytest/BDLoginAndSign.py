@@ -8,6 +8,8 @@ import re
 import cookielib
 import urllib2
 import urllib
+import json
+import time
 
 username = ''
 password = ''
@@ -88,107 +90,62 @@ def login():
         else:
             print '登陆失败...'
             
-            
-            
-            
-            
-            
+
+def sign():
     '''贴吧签到'''
     print '开始进行签到...'
     print '查找所有贴吧...'
-    '''improtant!!!'''
-    'http://tieba.baidu.com/f/like/mylike?v=1379413391641'  #v这货跟的多半是时间
-	'tieba.baidu.com/home/forum?un=ansshiwei&fr=home'  #我关注的i贴吧
-    ''''''
-#     BAIDU_TIEBA_URL = 'http://tieba.baidu.com/'
-#     BAIDU_ITIEBA_URL = 'http://tieba.baidu.com/i/%s?fr=index'
-    BAIDU_ITIEBA_URL = 'http://tieba.baidu.com/home/main?un=%s&fr=index'
-        
-#     tiebaHtml = urllib2.urlopen(BAIDU_TIEBA_URL).read()
-#     save('filename.txt', tiebaHtml)
-#     name_link = re.search('"name_link":(?P<tokenVal>\w+),"', tiebaHtml).group('tokenVal')
-        
-#     print 'name_link:', name_link
-    BAIDU_ITIEBA_URL = BAIDU_ITIEBA_URL %username
+
+    BAIDU_ITIEBA_URL = 'http://tieba.baidu.com/f/like/mylike?&pn=1'
+                            
     itiebaHtml = urllib2.urlopen(BAIDU_ITIEBA_URL).read()
-    save('filename.txt', itiebaHtml.decode('gbk'))
-#         print 'itiebaHtml = \n',itiebaHtml.decode('gbk')
-#         save('itiebaHtml.txt', itiebaHtml.decode('gbk'))
-        
-    itiebas = re.findall(r'kw=([0-9A-Za-z%]*)&fr=itb_favo&fp=favo" target="_blank">([^ ]*)</a>', itiebaHtml) 
-    print 'itiebas = \n', itiebas
-    if itiebas != []:
-        print 'itiebas = \n',itiebas[0][1].decode('gbk')
+
+    page = re.findall(u'pn=([^ ]*)">尾页</a>', itiebaHtml.decode('gbk'))[0]
+    itiebas = re.findall(r'kw=([0-9A-Za-z%]*)" title="([^ ]*)">', itiebaHtml) 
+    print 'page =',page
+    if page == '1':
+        print 'page2'
+
+    if itiebas != []:      
         for i in range(len(itiebas)):
-            print itiebas[i][1]
+            time.sleep(1)
+            requstSign(itiebas[i][0], itiebas[i][1].decode('gb2312'))
     else:
-        print 'false'
-
-def sign():
-        '''贴吧签到'''
-        print '开始进行签到...'
-        print '查找所有贴吧...'
+        print '您还没有关注的贴吧...'
         
-        BAIDU_TIEBA_URL = 'http://tieba.baidu.com/'
-        BAIDU_ITIEBA_URL = 'http://tieba.baidu.com/i/%s?fr=index'
-        
-        tiebaHtml = urllib2.urlopen(BAIDU_TIEBA_URL).read()
-        save('filename.txt', tiebaHtml)
-        name_link = re.search('"name_link":(?P<tokenVal>\w+),"', tiebaHtml).group('tokenVal')
-        
-        print 'name_link:', name_link
-        BAIDU_ITIEBA_URL = BAIDU_ITIEBA_URL %name_link
-        itiebaHtml = urllib2.urlopen(BAIDU_ITIEBA_URL).read()
-
-#         print 'itiebaHtml = \n',itiebaHtml.decode('gbk')
-#         save('itiebaHtml.txt', itiebaHtml.decode('gbk'))
-        
-        itiebas = re.findall(r'kw=([0-9A-Za-z%]*)&fr=itb_favo&fp=favo" target="_blank">([^ ]*)</a>', itiebaHtml)
-        print 'itiebas = \n',itiebas[0][1].decode('gbk')
-        print len(itiebas)
-        if itiebas != []:
-            for i in range(len(itiebas)):
-                print itiebas[i][1]
-        else:
-            print 'false'
+    print ''
             
-def requstSign(kw):
-        BAIDU_TIEBA_URL = 'http://tieba.baidu.com/f?kw=%s&fr=index&ie=utf-8' %kw
-        BAIDU_SIGN_URL  = 'http://tieba.baidu.com/sign/add'
+def requstSign(url, kw):
+    '''签到'''
+    print kw+'吧进行签到...'
+    BAIDU_TIEBA_URL = 'http://tieba.baidu.com/f?kw=%s&fr=index&ie=utf-8' %url
+    BAIDU_SIGN_URL  = 'http://tieba.baidu.com/sign/add'
         
-        resp = urllib2.urlopen(BAIDU_TIEBA_URL)
-        fffhtml = resp.read()
-#         save('tiebahtml1.txt', fffhtml.decode('gbk'))
-        
-        tbs = re.search('PageData.tbs = "(?P<tokenVal>\w+)";', fffhtml)
-        
-        if tbs:
-            print 'tbs=',tbs
-            tbsVal = tbs.group('tokenVal')
-            print 'tbsVal='+tbsVal
-        
-        pDict = {
-            'ie' : 'utf-8',
-            'kw' : '缘分0',#%E7%BC%98%E5%88%860
-#             'kw' : '%e5%85%a8%e8%81%8c%e9%ab%98%e6%89%8b',#全职高手
-            'tbs': tbsVal
-                 }
+    tiebaHtml = urllib2.urlopen(BAIDU_TIEBA_URL).read()
+    '''获取加密因子tbs'''   
+    tbs = re.search('PageData.tbs = "(?P<tokenVal>\w+)";', tiebaHtml).group('tokenVal')
 
-        
+#     print 'tbs=',tbs
 
-        
-        
-        pData = urllib.urlencode(pDict)
-        print pData
-        
-#         print 'teiba=\n',fffhtml.decode('gbk')
+    '''组装数据''' 
+    pDict = {
+        'ie' : 'utf-8',
+        'kw' : kw,
+        'tbs': tbs
+        }    
+    pData = urllib.urlencode(pDict)
 
-        '''签到'''
-#         r = urllib2.Request(signurl, pData)
-#         resp = urllib2.urlopen(r)
-#         printDelimiter()
-#         print resp.read()
-        print 'done'
+
+    '''提交请求'''
+    r = urllib2.Request(BAIDU_SIGN_URL, pData)
+    respHtml = urllib2.urlopen(r).read()
+    result = json.loads(respHtml)
+
+    if result['error'] == '':
+        print kw+'吧签到成功...'
+    else:
+        print kw+'吧签到失败,'+result['error'].decode('utf-8')+'...'
+    printDelimiter()
 
 def initData():
     '''获取用户名密码'''
@@ -216,7 +173,7 @@ def initData():
 def start():
     initData()
     login()
-#     sign()
+    sign()
 
 if __name__ == '__main__':
     start()
