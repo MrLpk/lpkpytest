@@ -47,6 +47,10 @@ def handleWeixin(request):
             db.insertDB(s)
             print 'execute COM_SF_CLEAN Sucess!!'
             return '主人[OK][可怜]'
+        elif command == m.COM_SIGN_START:
+            pass
+        elif command == m.COM_SIGN_STOP:
+            pass
         elif command == m.COM_UNKNOW:
             return '讲人话！！[抠鼻]'
     else:

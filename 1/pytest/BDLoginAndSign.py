@@ -1,28 +1,40 @@
 #coding=utf-8
 '''
-Created on 2013-9-17
-
-@author: liaopengkai
-'''
+    Created on 2013-9-17
+    
+    @author: liaopengkai
+    '''
 import re
 import cookielib
 import urllib2
 import urllib
 import json
+import datetime
 import time
+import threading
 
 username = ''
 password = ''
 
-def save(filename, contents): 
-    fh = open(filename, 'w') 
-    fh.write(contents) 
-    fh.close() 
+isRunning = True
+
+def save(filename, contents):
+    fh = open(filename, 'w')
+    fh.write(contents)
+    fh.close()
     print 'save done'
+
+def waitToTomorrow(d = 0, h = 0, m = 0, s = 0):
+    """定时器"""
     
+    tomorrow = datetime.datetime.replace(datetime.datetime.now() + datetime.timedelta(days=d), hour=h, minute=m, second=s)
+    delta = tomorrow - datetime.datetime.now()
+    print '将休眠 ', delta
+    time.sleep(delta.seconds)
+
 def printDelimiter():
     print '-'*80;
-    
+
 def login():
     '''登陆百度'''
     print '开始登陆...'
@@ -34,7 +46,7 @@ def login():
     BAIDU_STATIC_URL    = "http://www.baidu.com/cache/user/html/jump.html"
     BAIDU_LOGIN_URL     = "https://passport.baidu.com/v2/api/?login"
     BAIDU_USERINFO_URL  = 'http://passport.baidu.com/center?_t=1378735384'
- 
+    
     '''启用cookie'''
     cj = cookielib.CookieJar()
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
@@ -42,7 +54,7 @@ def login():
     
     '''打开百度'''
     urllib2.urlopen(BAIDU_MAIN_URL)
-
+    
     '''请求token'''
     print '请求token...'
     tokenHtml = urllib2.urlopen(BAIDU_TOKEN_URL).read()
@@ -52,24 +64,24 @@ def login():
     '''组装POST数据'''
     print '组装POST数据...'
     postDict = {
-            #'ppui_logintime': "",
-            'charset'       : "utf-8",
-            #'codestring'    : "",
-            'token'         : token, #de3dbf1e8596642fa2ddf2921cd6257f
-            'isPhone'       : "false",
-            'index'         : "0",
-            #'u'             : "",
-            #'safeflg'       : "0",
-            'staticpage'    : BAIDU_STATIC_URL, #http%3A%2F%2Fwww.baidu.com%2Fcache%2Fuser%2Fhtml%2Fjump.html
-            'loginType'     : "1",
-            'tpl'           : "mn",
-            'callback'      : "parent.bdPass.api.login._postCallback",
-            'username'      : username,
-            'password'      : password,
-            #'verifycode'    : "",
-            'mem_pass'      : "on",
+        #'ppui_logintime': "",
+        'charset'       : "utf-8",
+        #'codestring'    : "",
+        'token'         : token, #de3dbf1e8596642fa2ddf2921cd6257f
+        'isPhone'       : "false",
+        'index'         : "0",
+        #'u'             : "",
+        #'safeflg'       : "0",
+        'staticpage'    : BAIDU_STATIC_URL, #http%3A%2F%2Fwww.baidu.com%2Fcache%2Fuser%2Fhtml%2Fjump.html
+        'loginType'     : "1",
+        'tpl'           : "mn",
+        'callback'      : "parent.bdPass.api.login._postCallback",
+        'username'      : username,
+        'password'      : password,
+        #'verifycode'    : "",
+        'mem_pass'      : "on",
         }
-        
+    
     postData = urllib.urlencode(postDict)
     print 'postData:',postData
     
@@ -78,73 +90,78 @@ def login():
     
     print '请求登陆...'
     urllib2.urlopen(loginRequest).read()
-
+    
     '''查询个人信息'''
     infoRespHtml = urllib2.urlopen(BAIDU_USERINFO_URL).read()
     title = re.findall(r'<title>([^ ]*)</title>', infoRespHtml)
     
-    if title != []:   
+    if title != []:
         if title[0] == '个人中心':
             print '登陆成功...'
             print '当前用户:',username
         else:
             print '登陆失败...'
-            
+
 
 def sign():
     '''贴吧签到'''
     print '开始进行签到...'
     print '查找所有贴吧...'
-
+    
     BAIDU_ITIEBA_URL = 'http://tieba.baidu.com/f/like/mylike?&pn=1'
-                            
+    
     itiebaHtml = urllib2.urlopen(BAIDU_ITIEBA_URL).read()
-
+    
     page = re.findall(u'pn=([^ ]*)">尾页</a>', itiebaHtml.decode('gbk'))[0]
-    itiebas = re.findall(r'kw=([0-9A-Za-z%]*)" title="([^ ]*)">', itiebaHtml) 
-    print 'page =',page
-    if page == '1':
-        print 'page2'
+    itiebas = re.findall(r'kw=([0-9A-Za-z%]*)" title="([^ ]*)">', itiebaHtml)
+    
+    for index in range(int(page)):
+        tempIndex = index + 1
+        if tempIndex == 1:
+            pass
+        else:
+            itiebaHtml = urllib2.urlopen('http://tieba.baidu.com/f/like/mylike?&pn=%d' %tempIndex).read()
+            itiebas = re.findall(r'kw=([0-9A-Za-z%]*)" title="([^ ]*)">', itiebaHtml)
+    
+        if itiebas != []:
+            for i in range(len(itiebas)):
+                requstSign(itiebas[i][0], itiebas[i][1].decode('gb2312'))
+        else:
+            print '您还没有关注的贴吧...'
+    print '完成所有签到...'
 
-    if itiebas != []:      
-        for i in range(len(itiebas)):
-            time.sleep(1)
-            requstSign(itiebas[i][0], itiebas[i][1].decode('gb2312'))
-    else:
-        print '您还没有关注的贴吧...'
-        
-    print ''
-            
 def requstSign(url, kw):
     '''签到'''
     print kw+'吧进行签到...'
+    time.sleep(1.5)
     BAIDU_TIEBA_URL = 'http://tieba.baidu.com/f?kw=%s&fr=index&ie=utf-8' %url
     BAIDU_SIGN_URL  = 'http://tieba.baidu.com/sign/add'
-        
+    
     tiebaHtml = urllib2.urlopen(BAIDU_TIEBA_URL).read()
-    '''获取加密因子tbs'''   
+    '''获取加密因子tbs'''
     tbs = re.search('PageData.tbs = "(?P<tokenVal>\w+)";', tiebaHtml).group('tokenVal')
-
-#     print 'tbs=',tbs
-
-    '''组装数据''' 
+    
+    '''组装数据'''
     pDict = {
         'ie' : 'utf-8',
         'kw' : kw,
         'tbs': tbs
-        }    
+        }
     pData = urllib.urlencode(pDict)
-
-
+    
+    
     '''提交请求'''
     r = urllib2.Request(BAIDU_SIGN_URL, pData)
     respHtml = urllib2.urlopen(r).read()
     result = json.loads(respHtml)
-
+    
     if result['error'] == '':
         print kw+'吧签到成功...'
     else:
         print kw+'吧签到失败,'+result['error'].decode('utf-8')+'...'
+        if result['no'] != 1101:
+            requstSign(url, kw)
+
     printDelimiter()
 
 def initData():
@@ -162,18 +179,39 @@ def initData():
         username = 'ansshiwei'
     if password == '':
         password = '123123Aa'
-    
-    
+
+
     print 'username:'+username
     print 'password:'+password
     print 'init Finish...'
 
     iniFile.close()
-    
+
+def execute(no, interval):
+    global isRunning
+    isRunning = True
+    while isRunning:
+        waitToTomorrow(d = 0, h = 15, m = 21)
+        initData()
+        login()
+        sign()
 def start():
-    initData()
-    login()
-    sign()
+    global isRunning
+    isRunning = True
+    while isRunning:
+        waitToTomorrow(d = 0, h = 15, m = 32, s = 1)
+        initData()
+        login()
+        sign()
+
+def stop():
+    global isRunning
+    isRunning = False
+
+class BD(threading.Thread):
+    def run(self):
+        start()
 
 if __name__ == '__main__':
-    start()
+    bd = BD()
+    bd.start()
